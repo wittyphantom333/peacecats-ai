@@ -24,6 +24,11 @@ The calculator provides an interactive map where you can place an artillery posi
 - Map-specific coordinate bounds stored in map JSON
 - Map-specific tile configuration stored in map JSON
 - JSON-defined markers, circular zones, and complex polygons
+- Map marker image assets with emoji fallback
+- Map Tools: ruler, freehand drawing, and user-placed markers
+- Ruler distance and azimuth measurement
+- Persistent per-map drawings and user markers
+- Localized Map Tools interface
 - Saved target positions
 - Optional artillery-position saving with targets
 - Rename, restore, and delete saved targets
@@ -77,6 +82,48 @@ Saved data includes the target name and coordinates and, optionally, the artille
 | Zoom in | `+` |
 | Zoom out | `−` |
 | Reset view | `Fit map` |
+
+## Map Tools
+
+A floating tool menu in the bottom-right corner provides additional map utilities.
+
+### Ruler
+
+Select the **Ruler** tool and drag with the left mouse button between two points.
+
+The ruler displays:
+
+- Distance in meters / kilometers
+- Azimuth in degrees
+- `0°` North, `90°` East, `180°` South, `270°` West
+
+The measurement is temporary and disappears when the left mouse button is released.
+
+### Pencil
+
+The **Pencil** tool allows freehand drawing directly on the map.
+
+Drawing colors use the project's map palette:
+
+- Red — `#d86666`
+- Orange — `#d98b5f`
+- Gold — `#d7a452`
+- Green — `#82c596`
+- Blue — `#5fa8d3`
+- Cyan — `#67b7b0`
+- Purple — `#a889c9`
+- Light Gray — `#aeb8bf`
+- Dark Gray — `#59636b`
+
+Drawings are stored per map in `localStorage`. Hover a user-created line and use the delete control to remove it.
+
+### User Markers
+
+The **Markers** tool opens a grid populated from `markerIcons` in `maps/assets.json`.
+
+Select an icon and click the map to place it. User-created markers are stored per map in `localStorage`. Hover a user-created marker to reveal its delete control.
+
+Static markers defined by a map JSON are separate and are not removed by the Map Tools delete controls.
 
 ## Coordinate System
 
@@ -202,7 +249,7 @@ Example `maps/assets.json`:
 {
   "markerIcons": {
     "tower": {
-      "path": "assets/map-markers/tower.png",
+      "path": "assets/map-markers/tower.webp",
       "width": 32,
       "height": 32,
       "anchorX": 0.5,
@@ -368,6 +415,7 @@ wardogs-language
 wardogs-theme
 wardogs-saved-targets
 wardogs-save-artillery-position
+Map Tools drawings and user markers (per-map storage)
 ```
 
 Saved data remains local to the browser. Clearing site data removes these preferences and saved targets.
@@ -381,6 +429,9 @@ wardogs-calculator/
 ├── README.md
 ├── LICENSE
 ├── .gitignore
+│
+├── assets/
+│   └── map-markers/
 │
 ├── js/
 │   ├── core/
@@ -396,6 +447,8 @@ wardogs-calculator/
 │   │   ├── map-view.js
 │   │   ├── maps.js
 │   │   ├── overlays.js
+│   │   ├── map-tools.js
+│   │   ├── assets.js
 │   │   ├── renderer.js
 │   │   └── tiles.js
 │   │
@@ -410,6 +463,7 @@ wardogs-calculator/
 │
 ├── maps/
 │   ├── index.json
+│   ├── assets.json
 │   ├── bakurani.json
 │   ├── example_map.json
 │   └── tiles/
@@ -443,6 +497,8 @@ wardogs-calculator/
 - `map/tiles.js` — tile selection, loading, caching, and rendering
 - `map/grid.js` — coordinate grid and labels
 - `map/overlays.js` — markers, zones, polygons, and map overlays
+- `map/assets.js` — marker asset registry loading and image caching
+- `map/map-tools.js` — ruler, drawing tools, user markers, persistence, and Map Tools UI
 - `map/renderer.js` — canvas rendering pipeline and resizing
 - `features/results.js` — firing solution calculations
 - `features/saved-targets.js` — saved target persistence and UI
