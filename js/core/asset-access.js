@@ -399,7 +399,7 @@ function updateAssetAccessNotice() {
 }
 
 const LOCAL_ASSET_DOCUMENTATION_URL =
-    'https://github.com/apollyon-sys/wardogs-calculator/blob/main/docs/cdn.md#forks-and-self-hosted-deployments';
+    'https://github.com/apollyon-sys/wardogs-calculator/blob/main/docs/maps.md#tile-hosting';
 
 const LOCAL_ASSET_WARNING_SESSION_KEY =
     'wardogs-local-asset-warning-dismissed';

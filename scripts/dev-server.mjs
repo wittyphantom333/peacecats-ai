@@ -1,5 +1,6 @@
 import {
     createReadStream,
+    readdirSync,
     statSync,
     watch
 } from 'node:fs';
@@ -573,6 +574,311 @@ async function sendStatic(
     return true;
 }
 
+function sendJSON(response, value) {
+    const body = JSON.stringify(value);
+
+    response.writeHead(
+        200,
+        {
+            'Content-Type':
+                'application/json; charset=utf-8',
+            'Content-Length':
+                Buffer.byteLength(body),
+            'Cache-Control':
+                'no-store, max-age=0',
+            'X-Content-Type-Options':
+                'nosniff',
+            'Referrer-Policy':
+                'no-referrer'
+        }
+    );
+
+    response.end(body);
+}
+
+/*
+ * Local self-hosted tiles: when a placeholder pyramid exists under
+ * maps/tiles/, serve map and gateway configurations that point at it
+ * instead of the production asset CDN, which cannot authorize local
+ * development origins. Tracked files keep their production shape.
+ */
+const LOCAL_TILES_DIRECTORY =
+    join(root, 'maps', 'tiles');
+
+const LOCAL_TERRAIN_DIRECTORY =
+    join(root, 'data', 'terrain');
+
+function localTilePyramidMaxZoom(directory) {
+    for (let zoom = 7; zoom >= 0; zoom--) {
+        if (directoryExists(join(directory, `zoom_${zoom}`))) {
+            return zoom;
+        }
+    }
+
+    return -1;
+}
+
+/*
+ * Restored real pyramids use WebP tiles; placeholder pyramids
+ * use PNG. Both can coexist inside one pyramid directory while a
+ * local copy is assembled, so prefer WebP when the deepest zoom
+ * level contains it.
+ */
+function localTilePyramidExtension(directory, maxZoom) {
+    try {
+        const entries =
+            readdirSync(
+                join(directory, `zoom_${maxZoom}`)
+            );
+
+        for (const entry of entries) {
+            if (entry.endsWith('.webp')) {
+                return 'webp';
+            }
+        }
+    } catch {
+        /* Unreadable directory: keep the placeholder default. */
+    }
+
+    return 'png';
+}
+
+function localTileStyleForDirectory(pyramidPath, directory) {
+    const maxZoom =
+        localTilePyramidMaxZoom(directory);
+
+    if (maxZoom < 0) {
+        return null;
+    }
+
+    return {
+        path: pyramidPath,
+        extension: localTilePyramidExtension(directory, maxZoom),
+        maxZoom
+    };
+}
+
+const LOCAL_REVISION_PATTERN =
+    /\/revisions\/([a-z0-9][a-z0-9-]{0,47})$/;
+
+/*
+ * Prefer a local pyramid placed for the exact production revision
+ * (maps/tiles/<map>/revisions/<rev>/), then fall back to the bare
+ * restored or placeholder pyramid so imagery revisions never mix.
+ */
+function localTileStyleForProductionPath(productionPath, mapId, suffix = '') {
+    const revision =
+        typeof productionPath === 'string' &&
+        productionPath.match(LOCAL_REVISION_PATTERN);
+
+    if (revision) {
+        const revisionPath =
+            `maps/tiles/${mapId}${suffix}/revisions/${revision[1]}`;
+
+        const style =
+            localTileStyleForDirectory(
+                revisionPath,
+                join(root, revisionPath)
+            );
+
+        if (style) {
+            return style;
+        }
+    }
+
+    const fallbackPath =
+        `maps/tiles/${mapId}${suffix}`;
+
+    return localTileStyleForDirectory(
+        fallbackPath,
+        join(root, fallbackPath)
+    );
+}
+
+async function sendLocalMapJson(response, mapId) {
+    const sourcePath =
+        join(root, 'maps', `${mapId}.json`);
+
+    if (!(await exists(sourcePath))) {
+        return false;
+    }
+
+    const map =
+        JSON.parse(await readFile(sourcePath, 'utf8'));
+
+    const productionStyles =
+        map.tiles?.styles || {};
+
+    const grayscale =
+        localTileStyleForProductionPath(
+            productionStyles.grayscale?.path || map.tiles?.path,
+            mapId
+        );
+
+    if (!grayscale) {
+        return false;
+    }
+
+    const styles = { grayscale };
+
+    const color =
+        localTileStyleForProductionPath(
+            productionStyles.color?.path,
+            mapId,
+            '-color'
+        );
+
+    if (color) {
+        styles.color = color;
+    }
+
+    map.tiles = {
+        ...map.tiles,
+        ...grayscale,
+        tileSize: 256,
+        styles
+    };
+
+    sendJSON(response, map);
+    return true;
+}
+
+async function sendLocalConfigJson(response) {
+    const sourcePath =
+        join(root, 'config', 'app.json');
+
+    if (!(await exists(sourcePath))) {
+        return false;
+    }
+
+    const config =
+        JSON.parse(await readFile(sourcePath, 'utf8'));
+
+    config.assetGateway = {
+        ...config.assetGateway,
+        enabled: false,
+        origin: 'https://local-assets.invalid',
+        directOrigin: 'https://local-assets.invalid'
+    };
+
+    sendJSON(response, config);
+    return true;
+}
+
+/*
+ * Local terrain datasets: restored Terrain3D chunks stay under
+ * data/terrain/<map-id>/chunks/. A restored dataset can differ from
+ * the tracked manifest (the recoverable Bakurani chunks predate the
+ * season-2 release), so a manifest.local.json side file describes
+ * the binaries actually on disk and takes precedence.
+ */
+async function localTerrainManifest(mapId) {
+    const mapDirectory =
+        join(LOCAL_TERRAIN_DIRECTORY, mapId);
+
+    if (!directoryExists(join(mapDirectory, 'chunks'))) {
+        return null;
+    }
+
+    const localManifestPath =
+        join(mapDirectory, 'manifest.local.json');
+
+    if (await exists(localManifestPath)) {
+        return `data/terrain/${mapId}/manifest.local.json`;
+    }
+
+    const trackedManifestPath =
+        join(mapDirectory, 'manifest.json');
+
+    return await exists(trackedManifestPath)
+        ? `data/terrain/${mapId}/manifest.json`
+        : null;
+}
+
+async function sendLocalTerrainContextJson(response) {
+    const sourcePath =
+        join(root, 'data', 'ballistics', 'terrain-context.json');
+
+    if (!(await exists(sourcePath))) {
+        return false;
+    }
+
+    const config =
+        JSON.parse(await readFile(sourcePath, 'utf8'));
+
+    const manifests = new Map();
+
+    for (const mapId of Object.keys(config.terrainMaps || {})) {
+        const manifest =
+            await localTerrainManifest(mapId);
+
+        if (manifest) {
+            manifests.set(mapId, manifest);
+        }
+    }
+
+    if (!manifests.size) {
+        return false;
+    }
+
+    if (
+        config.mapId &&
+        manifests.has(config.mapId)
+    ) {
+        config.terrainManifest =
+            manifests.get(config.mapId);
+    }
+
+    for (
+        const [mapId, definition] of
+            Object.entries(config.terrainMaps || {})
+    ) {
+        const manifest =
+            manifests.get(mapId);
+
+        if (!manifest) {
+            continue;
+        }
+
+        config.terrainMaps[mapId] =
+            typeof definition === 'string'
+                ? manifest
+                : {
+                    ...definition,
+                    terrainManifest: manifest
+                };
+    }
+
+    sendJSON(response, config);
+    return true;
+}
+
+async function sendLocalAssetOverride(response, pathname) {
+    if (
+        !directoryExists(LOCAL_TILES_DIRECTORY) &&
+        !directoryExists(LOCAL_TERRAIN_DIRECTORY)
+    ) {
+        return false;
+    }
+
+    if (pathname === '/config/app.json') {
+        return sendLocalConfigJson(response);
+    }
+
+    if (pathname === '/data/ballistics/terrain-context.json') {
+        return sendLocalTerrainContextJson(response);
+    }
+
+    const mapMatch =
+        pathname.match(/^\/maps\/([a-z0-9-]+)\.json$/);
+
+    if (mapMatch) {
+        return sendLocalMapJson(response, mapMatch[1]);
+    }
+
+    return false;
+}
+
 function requestHostAllowed(request) {
     const value =
         request.headers.host;
@@ -1000,6 +1306,15 @@ async function createRequestHandler() {
                         return;
                     }
                 }
+            }
+
+            if (
+                await sendLocalAssetOverride(
+                    response,
+                    pathname
+                )
+            ) {
+                return;
             }
 
             if (

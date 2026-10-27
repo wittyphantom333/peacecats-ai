@@ -125,8 +125,6 @@ actual protection.
   listing do not make public assets confidential. Preventing redistribution
   requires licensing/enforcement or an authenticated paid delivery design,
   which would add cost and still cannot stop an authorized client from copying.
-  This technical limitation does not grant permission to use the CDN or hosted
-  assets in another project; see [CDN & hosted assets](cdn.md).
 - The [asset delivery service](assets-gateway.md) applies automated access
   controls against direct hotlinking and bulk retrieval. These controls raise
   the cost of unsophisticated automation but cannot prevent a legitimate user

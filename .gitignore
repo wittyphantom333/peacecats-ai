@@ -24,3 +24,5 @@ Trace-*.json
 # Terrain binaries are published with their manifests to Cloudflare R2.
 # Keep local manifests and generated contours in Git for the toolchain.
 /data/terrain/**/*.bin
+# Side manifests describe locally restored binaries (e.g. pre-release data).
+/data/terrain/**/manifest.local.json

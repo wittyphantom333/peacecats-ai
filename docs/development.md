@@ -75,15 +75,12 @@ npm run dev
 
 Open `http://localhost:8000/`.
 
-> **Protected map assets:** the production asset service authorizes the
-> official application origin and is not an asset backend for local forks or
-> independent deployments. The interface will start locally, but protected map
-> imagery and Terrain3D data will not load unless the maintainer has explicitly
-> enabled a temporary contributor origin. Self-hosted deployments must provide
-> assets they are entitled to use, host them independently, and replace the
-> configured URLs. See [Forks and self-hosted deployments](cdn.md#forks-and-self-hosted-deployments),
-> [Tile hosting](maps.md#tile-hosting), and
-> [Terrain3D hosting](terrain.md#terrain3d-hosting).
+> **Local map tiles:** the development server automatically repoints the map
+> configuration at `maps/tiles/` when a local pyramid is present. Generate
+> placeholder tiles with `node generate-local-tiles.mjs`, or drop your own
+> imagery into `maps/tiles/<map-id>/zoom_N/` — including a
+> `revisions/<rev>/` pyramid when it should follow the production revision.
+> See [Tile hosting](maps.md#tile-hosting).
 
 Production analytics are disabled by default in the development server. Set `WARDOGS_DISABLE_ANALYTICS=false` only when explicitly testing the GoatCounter integration. See [Analytics](analytics.md#development-analytics-switch) for the full local-testing behavior.
 

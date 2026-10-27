@@ -52,7 +52,7 @@ test('protected assets use credentialed requests and session recovery', async ()
     assert.match(access, /localAssetWarningTitle/);
     assert.match(access, /localAssetWarningClose/);
     assert.match(access, /sessionStorage\.setItem/);
-    assert.match(access, /docs\/cdn\.md#forks-and-self-hosted-deployments/);
+    assert.match(access, /docs\/maps\.md#tile-hosting/);
     assert.match(tiles, /'use-credentials'/);
     assert.match(tiles, /fetchAssetResource/);
     assert.match(tiles, /ensureAssetAccess/);

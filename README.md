@@ -61,20 +61,17 @@ Detailed documentation is split into focused files to keep this README concise.
 - [Message of the Day](docs/motd.md) — MOTD configuration, localization, and behavior
 - [Collaborative lobbies](docs/lobbies.md) — live team map behaviour, Cloudflare deployment, limits, privacy, and recovery
 - [Security hardening](docs/security.md) — public-source threat model, Cloudflare headers, secrets, CI, and residual risks
-- [CDN & hosted assets](docs/cdn.md) — permitted use of the project-funded CDN and requirements for forks and self-hosted deployments
-- [Asset delivery](docs/assets-gateway.md) — CDN usage boundaries, contributor checks, privacy, and security reporting
+- [Asset delivery](docs/assets-gateway.md) — asset gateway architecture, development, privacy, and expected responses
 - [Contributing](docs/contributing.md) — contribution guidelines
 - [License & Disclaimer](docs/legal.md) — MIT scope, third-party assets, and project disclaimer
 
 ## Quick Start
 
-> [!WARNING]
-> The application shell can be run locally, but the official protected map and
-> Terrain3D assets will not load in an independent local or self-hosted
-> deployment. The source-code license does not include access to the
-> project-funded CDN. To display maps, host assets you are entitled to use on
-> your own infrastructure and replace the configured asset URLs. See
-> [Forks and self-hosted deployments](docs/cdn.md#forks-and-self-hosted-deployments).
+> [!NOTE]
+> Map tiles and Terrain3D chunks are not part of this repository. Generate
+> placeholder tiles with `node generate-local-tiles.mjs`; the development
+> server automatically serves any pyramid under `maps/tiles/<map-id>/zoom_N/`.
+> Drop your own imagery there for a real basemap.
 
 ```bash
 npm run build
@@ -107,5 +104,3 @@ WARDOGS Artillery Calculator is free, open source, and does not place features b
 Original project source code is licensed under the [MIT License](LICENSE).
 
 WARDOGS assets and other third-party materials are not covered by the MIT License. See [License & Disclaimer](docs/legal.md) for details.
-
-The hosted map and terrain CDN is privately operated and funded for the official application. The MIT source-code license does not grant permission to use the CDN as infrastructure for forks, third-party applications, mirrors, bulk downloaders, or asset redistribution. See [CDN & hosted assets](docs/cdn.md).

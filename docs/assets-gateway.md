@@ -1,26 +1,7 @@
 # Asset delivery
 
 WARDOGS Artillery Calculator loads map tiles and Terrain3D data through a
-separate asset service. The service is operated for the official application
-and is not a public mirror or general-purpose asset API.
-
-## Usage policy
-
-The project source code and the separately hosted game assets have different
-usage constraints. Access to the source repository does not grant permission
-to bypass CDN controls, hotlink the production asset service, mirror it with an
-automated downloader, or use it as a build dependency for another project.
-
-Independent tools and forks should obtain any required game data independently
-and serve it from infrastructure controlled by their maintainers. Do not point
-third-party applications, Docker images, installers or preparation scripts at
-the production WARDOGS asset domains.
-
-WARDOGS game content remains the property of its respective rights holders,
-including BULKHEAD. This repository does not grant additional rights to extract,
-redistribute or republish game assets.
-
-See [CDN and hosted assets](cdn.md) for the repository-wide asset policy.
+separate asset service.
 
 ## Architecture overview
 

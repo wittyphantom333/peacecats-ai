@@ -106,13 +106,13 @@ chunks use R2 as described in [Terrain3D hosting](terrain.md#terrain3d-hosting).
 Map JSON, marker images, contours and ballistic configuration keep their
 existing paths on the application host.
 
-The tile loader requests images through the protected asset client. The
-production service authorizes the official application origin; merely running
-the repository on `localhost`, a LAN address, or another domain does not grant
-access. A contributor origin may be enabled temporarily by the maintainer, but
-forks and self-hosted deployments must use their own asset host and update the
-map configuration accordingly. See
-[Forks and self-hosted deployments](cdn.md#forks-and-self-hosted-deployments).
+The tile loader requests images through the protected asset client when tile
+paths point at the production asset gateway. The development server repoints
+tile paths at the local `maps/tiles/` pyramid when one is present, so local
+deployments do not contact the production gateway. A local pyramid placed
+under `maps/tiles/<map-id>/revisions/<rev>/` (or
+`maps/tiles/<map-id>-color/revisions/<rev>/`) is preferred when it matches the
+configured production revision, so imagery from different revisions cannot mix.
 
 `maps/tiles/` is local working data: Git ignores new files there and the build
 excludes the entire directory from `dist/`, even when a local tile copy exists.
@@ -177,13 +177,6 @@ redirect, fallback to old imagery, or additional Worker hop for direct delivery.
 Existing prefix-based WAF rules continue to apply. CDN purging does not clear
 copies already stored in browser caches; changing the object path avoids those
 old copies on the next application load.
-
-These URLs are browser-visible, but they are not a general-purpose public asset
-API. Moving tiles out of Git reduces the checkout and build size, while CORS
-alone cannot prevent copying. Use of the project-funded CDN is nevertheless
-limited by the [CDN & hosted assets policy](cdn.md). Forks and independent
-deployments must host any assets they are entitled to use themselves and must
-not hotlink, proxy, scrape, mirror, or bulk-download the official CDN.
 
 ---
 

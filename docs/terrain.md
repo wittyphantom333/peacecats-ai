@@ -91,12 +91,6 @@ The binary terrain chunks contain only elevation samples. They are not map-image
 
 ### Terrain3D hosting
 
-The host below is project-funded infrastructure for the official application,
-not a public asset service for forks or independent deployments. The
-[CDN & hosted assets policy](cdn.md) applies to manifests and chunks as well as
-map imagery. Third-party deployments must use independently obtained and hosted
-data and replace the URLs in their own configuration.
-
 The application loads published manifests and chunks from Cloudflare R2 under:
 
 ```text
@@ -116,6 +110,26 @@ binaries there; removing already tracked binaries requires a separate index
 change after upload and runtime verification. Local manifests remain tracked
 for the toolchain, and `contours.json` stays on the application host. Keep the
 `data/terrain/` directory.
+
+### Restoring local terrain data
+
+Terrain chunks removed from Git history can be restored for local
+development:
+
+```bash
+git archive 6989c96b1^ -- data/terrain/bakurani/chunks data/terrain/ozeti/chunks data/terrain/zestafona/chunks | tar -x
+```
+
+Verify every restored chunk against its manifest (`bytes` and `sha256`)
+before use. The recoverable Bakurani chunks predate the season-2 release and
+mismatch the tracked manifest; in that case restore the matching historical
+manifest as a gitignored `data/terrain/<map-id>/manifest.local.json` side
+file. The development server prefers the side manifest when local chunks are
+present and repoints `data/ballistics/terrain-context.json` at local
+manifests, so the local build never contacts the production gateway. Chunks
+missing from both Git history and the working tree (edge tiles such as
+`-1_0.bin`/`16_15.bin`) fall outside each manifest's declared chunk range,
+which playable coordinates never request.
 
 Allow the application origin and local development origins in R2 CORS for
 `GET` and `HEAD`, as with map tiles. The `/releases/` cache rule must cover JSON
